@@ -1,13 +1,5 @@
-<<<<<<< HEAD
 streamlit
 pandas
 plotly
 Pillow
 openpyxl
-=======
-streamlit
-pandas
-plotly
-Pillow
-openpyxl
->>>>>>> 68609788d5d3ed6478f77815ae45c0068be7adc3
