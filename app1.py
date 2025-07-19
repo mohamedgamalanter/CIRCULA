@@ -21,10 +21,17 @@ def render_animation():
     gif_path = "20250719_1311_Dynamic Logo Motion_simple_compose_01k0h2ne94fb0bqqcd2yek36yy.gif"
     gif_bytes = open(gif_path, "rb").read()
     encoded = base64.b64encode(gif_bytes).decode()
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] { display: none; }
+            .block-container { padding-top: 0rem !important; }
+            body { background: #111 !important; }
+        </style>
+        """, unsafe_allow_html=True)
     st.markdown(
         f"""
-        <div style='text-align:center;'>
-            <img src='data:image/gif;base64,{encoded}' width='400'>
+        <div style='display:flex;justify-content:center;align-items:center;height:100vh;width:100vw;position:fixed;top:0;left:0;z-index:99999;background:#111;'>
+            <img src='data:image/gif;base64,{encoded}' style='width:80vw;height:auto;max-width:100vw;object-fit:contain;'>
         </div>
         """,
         unsafe_allow_html=True
@@ -97,39 +104,54 @@ def render_notifications(df):
     for alert in alerts:
         st.error(alert)
 
+def update_transfer_status(transfer_id, new_status, driver=None):
+    df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
+    idx = df[df['transfer_id'] == transfer_id].index
+    if not idx.empty:
+        idx = idx[0]
+        df.at[idx, 'status'] = new_status
+        if new_status == "Picked Up":
+            df.at[idx, 'driver'] = driver
+            df.at[idx, 'picked_up_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        if new_status == "Received":
+            df.at[idx, 'received_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+            df.to_excel(writer, sheet_name="Transfers", index=False)
+
 def render_transfer_cards(df, role):
-    grouped = df.groupby(['status'])
-    for status, group in grouped:
-        with st.expander(f"📦 {status} ({len(group)} transfers)"):
-            for i, row in group.iterrows():
-                with st.container():
-                    st.markdown(f"**Transfer ID**: {row['transfer_id']} | **From**: {row['from']} ➡️ **To**: {row['to']} | **Status**: {row['status']}")
-                    if st.button(f"📋 View Transfer {row['transfer_id']}", key=f"view_{i}"):
-                        st.json(row.to_dict())
-                        if row['status'].lower() == "pending" and role in ["branch", "driver"]:
-                            st.button("✅ Confirm Pickup", key=f"pickup_{i}")
-                        elif row['status'].lower() == "picked up" and role == "branch":
-                            st.button("📥 Mark as Received", key=f"receive_{i}")
-                        elif row['status'].lower() == "picked up" and role == "driver":
-                            st.button("📦 Deliver to WH", key=f"wh_{i}")
-                        elif row['status'].lower() == "pending at wh" and role == "driver":
-                            st.button("🏬 Store at WH", key=f"store_{i}")
+    for i, row in df.iterrows():
+        with st.container():
+            st.markdown(f"**Transfer ID**: {row['transfer_id']} | **From**: {row['from']} ➡️ **To**: {row['to']} | **Status**: {row['status']}")
+            st.json(row.to_dict())
+
+            # Pick Up button for drivers
+            if role == "driver" and row['status'].lower() in ["pending", "pending at wh"]:
+                if st.button("🚚 Pick Up", key=f"pickup_{i}"):
+                    update_transfer_status(row['transfer_id'], "Picked Up", driver=st.session_state.username)
+                    st.success("تم تغيير الحالة إلى Picked Up")
+                    st.experimental_rerun()
+
+            # Receive button for branches (only for their incoming transfers)
+            if role == "branch" and row['to'] == st.session_state.branch_code and row['status'].lower() in ["pending", "picked up"]:
+                if st.button("📥 Receive", key=f"receive_{i}"):
+                    update_transfer_status(row['transfer_id'], "Received")
+                    st.success("تم تغيير الحالة إلى Received")
+                    st.experimental_rerun()
 
 def render_transfers():
     st.subheader("📦 Internal Transfers")
     role = st.session_state.get("role", "").lower()
     branch = st.session_state.get("branch_code", "")
+    username = st.session_state.get("username", "")
+
     if role == "branch":
         st.markdown("### ➕ Create New Transfer")
-
         with st.form("new_transfer_form", clear_on_submit=True):
             transfer_id = st.text_input("Transfer ID")
             to_branch = st.text_input("To Branch")
             value = st.number_input("Transfer Value (SAR)", min_value=0.0, format="%.2f")
             notes = st.text_area("Notes")
-
             submitted = st.form_submit_button("Submit Transfer")
-
             if submitted:
                 new_transfer = {
                     "transfer_id": transfer_id,
@@ -141,28 +163,27 @@ def render_transfers():
                     "date": datetime.today().strftime('%Y-%m-%d'),
                     "driver": "",
                 }
-
                 df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
                 df = pd.concat([pd.DataFrame([new_transfer]), df], ignore_index=True)
                 with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
                     df.to_excel(writer, sheet_name="Transfers", index=False)
-
                 st.success("✅ Transfer created successfully.")
 
     df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
-    df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
     role = st.session_state.role.lower()
     branch = st.session_state.branch_code
+    username = st.session_state.username
 
+    # ------------------------- فلترة التحويلات ---------------------------
     if role == "driver":
-       df = df[
-           (df['status'].str.lower().isin(["pending", "pending at wh"])) |
-           ((df['status'].str.lower() == "picked up") & (df['driver'] == st.session_state.username))
-       ]
-
-
+        df = df[
+            ((df['status'].str.lower().isin(["pending", "pending at wh"]))) |
+            ((df['status'].str.lower() == "picked up") & (df['driver'] == username))
+        ]
     elif role == "branch":
-        df = df[(df['from'] == branch) | (df['to'] == branch)]
+        df = df[
+            ((df['status'].str.lower().isin(["pending", "picked up"])) & (df['to'] == branch))
+        ]
     elif role == "supervisor":
         df = df[df['from'].astype(str).str[:2] == str(branch)[:2]]
     elif role in ["manager", "owner"]:
@@ -259,7 +280,6 @@ if not st.session_state.logged_in:
 if st.session_state.get("just_logged_in", False):
     st.session_state.just_logged_in = False
     render_animation()
-
 
 # Header Rendering
 render_header()
