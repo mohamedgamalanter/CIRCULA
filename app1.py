@@ -117,6 +117,7 @@ def render_transfer_cards(df, role):
 
 def render_transfers():
     st.subheader("📦 Internal Transfers")
+<<<<<<< HEAD
     role = st.session_state.get("role", "").lower()
     branch = st.session_state.get("branch_code", "")
     if role == "branch":
@@ -150,6 +151,11 @@ def render_transfers():
                 st.success("✅ Transfer created successfully.")
 
     df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
+=======
+    df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
+    role = st.session_state.role.lower()
+    branch = st.session_state.branch_code
+>>>>>>> 68609788d5d3ed6478f77815ae45c0068be7adc3
 
     if role == "driver":
         df = df[(df['driver'] == st.session_state.username) | (df['status'].str.lower() == "pending at wh")]
