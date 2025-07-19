@@ -129,7 +129,7 @@ def render_transfer_cards(df, role):
                 if st.button("🚚 Pick Up", key=f"pickup_{i}"):
                     update_transfer_status(row['transfer_id'], "Picked Up", driver=st.session_state.username)
                     st.success("تم تغيير الحالة إلى Picked Up")
-                    st.experimental_rerun()
+                    st.rerun()
 
             # Receive button for branches (only for their incoming transfers)
             if role == "branch" and row['to'] == st.session_state.branch_code and row['status'].lower() in ["pending", "picked up"]:
