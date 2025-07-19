@@ -136,7 +136,7 @@ def render_transfer_cards(df, role):
                 if st.button("📥 Receive", key=f"receive_{i}"):
                     update_transfer_status(row['transfer_id'], "Received")
                     st.success("تم تغيير الحالة إلى Received")
-                    st.experimental_rerun()
+                    st.rerun()
 
 def render_transfers():
     st.subheader("📦 Internal Transfers")
