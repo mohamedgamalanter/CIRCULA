@@ -155,7 +155,12 @@ def render_transfers():
     branch = st.session_state.branch_code
 
     if role == "driver":
-        df = df[(df['driver'] == st.session_state.username) | (df['status'].str.lower() == "pending at wh")]
+    df = df[
+        (df['status'].str.lower() == "pending") |
+        (df['status'].str.lower() == "pending at wh") |
+        (df['driver'] == st.session_state.username)
+    ]
+
     elif role == "branch":
         df = df[(df['from'] == branch) | (df['to'] == branch)]
     elif role == "supervisor":
