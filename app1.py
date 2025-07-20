@@ -168,7 +168,8 @@ def render_transfers():
                 for col in template_cols:
                     if col not in new_transfer:
                      new_transfer[col] = ""
-                     new_transfer = {k: new_transfer[k] for k in template_cols}
+                     new_transfer = {k: new_transfer.get(k, "") for k in template_cols}
+
 
                      df = pd.concat([pd.DataFrame([new_transfer]), existing_df], ignore_index=True)
 
