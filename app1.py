@@ -173,7 +173,7 @@ def render_transfers():
 
                      df = pd.concat([pd.DataFrame([new_transfer]), existing_df], ignore_index=True)
 
-                     with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+                     with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="w", if_sheet_exists="replace") as writer:
                         df.to_excel(writer, sheet_name="Transfers", index=False)
                 st.success("✅ Transfer created successfully.")
 
