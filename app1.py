@@ -153,6 +153,8 @@ def render_transfers():
             notes = st.text_area("Notes")
             submitted = st.form_submit_button("Submit Transfer")
             if submitted:
+                existing_df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
+                template_cols = existing_df.columns.tolist()
                 new_transfer = {
                     "transfer_id": transfer_id,
                     "from": branch,
@@ -163,10 +165,15 @@ def render_transfers():
                     "date": datetime.today().strftime('%Y-%m-%d'),
                     "driver": "",
                 }
-                df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
-                df = pd.concat([pd.DataFrame([new_transfer]), df], ignore_index=True)
-                with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-                    df.to_excel(writer, sheet_name="Transfers", index=False)
+                for col in template_cols:
+    if col not in new_transfer:
+        new_transfer[col] = ""
+        new_transfer = {k: new_transfer[k] for k in template_cols}
+
+        df = pd.concat([pd.DataFrame([new_transfer]), existing_df], ignore_index=True)
+
+        with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+        df.to_excel(writer, sheet_name="Transfers", index=False)
                 st.success("✅ Transfer created successfully.")
 
     df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
