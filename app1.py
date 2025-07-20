@@ -288,7 +288,16 @@ if not st.session_state.logged_in:
 if st.session_state.get("just_logged_in", False):
     st.session_state.just_logged_in = False
     render_animation()
-
+if st.session_state.get("role", "").lower() == "owner":
+    st.subheader("🔒 Download Data (Owner Only)")
+    with open("logistics_system_sheets.xlsx", "rb") as f:
+        bytes_data = f.read()
+    st.download_button(
+        label="Download Full Excel File",
+        data=bytes_data,
+        file_name="logistics_system_sheets.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 # Header Rendering
 render_header()
 
