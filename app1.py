@@ -166,14 +166,14 @@ def render_transfers():
                     "driver": "",
                 }
                 for col in template_cols:
-    if col not in new_transfer:
-        new_transfer[col] = ""
-        new_transfer = {k: new_transfer[k] for k in template_cols}
+                    if col not in new_transfer:
+                     new_transfer[col] = ""
+                     new_transfer = {k: new_transfer[k] for k in template_cols}
 
-        df = pd.concat([pd.DataFrame([new_transfer]), existing_df], ignore_index=True)
+                     df = pd.concat([pd.DataFrame([new_transfer]), existing_df], ignore_index=True)
 
-        with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-        df.to_excel(writer, sheet_name="Transfers", index=False)
+                     with pd.ExcelWriter("logistics_system_sheets.xlsx", engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+                     df.to_excel(writer, sheet_name="Transfers", index=False)
                 st.success("✅ Transfer created successfully.")
 
     df = pd.read_excel("logistics_system_sheets.xlsx", sheet_name="Transfers")
